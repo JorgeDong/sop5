@@ -13,14 +13,41 @@ int g=0;
 
 void initsem(SEMAPHORE *s,int val)
 {
+	s->count=val;
+	initqueue(&s->queue);
 }
 
 
 void waitsem(SEMAPHORE *s)
 {
+	//GARANTIZAR ATOMICIDAD - implica que dos procesos no ejectuten wait() y signal() al mismo tiempo.
+	int l=1; //variable local para cada uno de los procesos
+	do{ atomic_xchg(l,g)}while(l==1);
+
+	s->count--;
+	if(s->count<0){
+		enqueue(&s->queue,pthread_self());
+		g=0;
+		l=1;
+		block_thread();
+		
+	}
+	g=0;
+	l=1;
+
 }
 
 void signalsem(SEMAPHORE *s)
 {
+	//GARANTIZAR ATOMICIDAD - implica que dos procesos no ejectuten wait() y signal() al mismo tiempo.
+	int l=1; //variable local para cada uno de los procesos
+	do{ atomic_xchg(l,g)}while(l==1);
+	s->count++;
+	if(s->count<=0){
+		pthread_t next=dequeue(&s->queue);
+		unblock_thread(next);
+	}
+	g=0;
+	l=1;
 }
 
