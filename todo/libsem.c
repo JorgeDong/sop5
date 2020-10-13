@@ -20,18 +20,20 @@ void initsem(SEMAPHORE *s,int val)
 
 void waitsem(SEMAPHORE *s)
 {
-	//GARANTIZAR ATOMICIDAD - implica que dos procesos no ejectuten wait() y signal() al mismo tiempo.
-	int l=1; //variable local para cada uno de los procesos
+	//GARANTIZAR ATOMICIDAD - implica que dos hilos no ejectuten wait() y signal() al mismo tiempo.
+	int l=1; //variable local para cada uno de los hilos
 	do{ atomic_xchg(l,g)}while(l==1);
 
-	s->count--;
+	s->count--;//Decrementa el numero de hilos que pueden ejecutar wait sin que se bloqueen.
 	if(s->count<0){
-		enqueue(&s->queue,pthread_self());
+		enqueue(&s->queue,pthread_self());//Poner este hilo en cola de bloqueados
+		//Liberar variables del xchg para permitir a otros hilos ejecutar wait() y signal()
 		g=0;
 		l=1;
+		//Bloquear este hilo
 		block_thread();
-		
 	}
+	//Liberar variables del xchg para permitir a otros hilos ejecutar wait() y signal()
 	g=0;
 	l=1;
 
