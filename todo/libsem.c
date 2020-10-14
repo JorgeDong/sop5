@@ -44,11 +44,12 @@ void signalsem(SEMAPHORE *s)
 	//GARANTIZAR ATOMICIDAD - implica que dos procesos no ejectuten wait() y signal() al mismo tiempo.
 	int l=1; //variable local para cada uno de los procesos
 	do{ atomic_xchg(l,g)}while(l==1);
-	s->count++;
+	s->count++; //Modificar count para señalar que habrá un hilo menos esperando en la cola
 	if(s->count<=0){
-		pthread_t next=dequeue(&s->queue);
-		unblock_thread(next);
+		pthread_t next=dequeue(&s->queue);//Sacamos el hilo de la cola de bloqueados (FIFO)
+		unblock_thread(next);//Desbloqueamos hilo
 	}
+	//Liberar variables del xchg para permitir a otros hilos ejecutar wait() y signal()
 	g=0;
 	l=1;
 }
